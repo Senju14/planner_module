@@ -1,0 +1,28 @@
+# Python environment virtual folder
+.venv/
+venv/
+ENV/
+
+# Python compiled cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Local model weights (huge files, do not push)
+models/
+
+# Transient dumps & user configuration
+screenshots/
+outputs/
+instruction.txt
+sample_ui.json
+output.json
+
+# IDE config files
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp

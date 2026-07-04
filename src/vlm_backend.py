@@ -93,7 +93,13 @@ def generate_action(system_prompt: str, prompt: str, image_path: str = "screensh
     pil_image = Image.open(small_image_path)
 
     # Preprocess inputs
-    inputs = processor(text=text_prompt, images=[pil_image], return_tensors="pt")
+    inputs = processor(
+        text=text_prompt,
+        images=[pil_image],
+        return_tensors="pt",
+        do_resize=True,
+        size={"longest_edge": 384}
+    )
     inputs = inputs.to(device)
 
     # Build generation keyword arguments
