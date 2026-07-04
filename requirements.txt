@@ -1,5 +1,11 @@
-fastapi
-uvicorn[standard]
-pydantic
-pytest
-httpx
+torch
+torchvision
+transformers>=4.50.0
+accelerate
+qwen-vl-utils
+Pillow
+opencv-python
+sentencepiece
+einops
+pillow
+PySide6>=6.8

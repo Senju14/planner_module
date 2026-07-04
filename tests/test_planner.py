@@ -1,152 +1,60 @@
-from src.models import PlannerRequest, UIElement, ActionType
-from src.planner import Planner
+import sys
+import json
+from pathlib import Path
 
+# Append project root to PYTHONPATH
+project_root = Path(__file__).resolve().parent.parent
+sys.path.append(str(project_root))
 
-def test_planner_generates_click_for_settings():
-    planner = Planner()
-    request = PlannerRequest(
-        instruction="click settings",
-        ui_elements=[UIElement(id="1", class_name="Button", bounds=[100, 200, 300, 400], text="Settings")]
-    )
-    response = planner.generate_action(request)
-    assert response.action == ActionType.CLICK
-    assert response.target_coordinates == [200, 300]
-    assert response.done is False
-    assert response.confidence > 0.5
+from src.planner_module import Planner
 
+class MockVLMBackend:
+    """Mock VLM generator mimicking different return patterns from LLMs."""
+    def __init__(self, response_value: str):
+        self.response_value = response_value
 
-def test_planner_generates_click_for_open():
-    planner = Planner()
-    request = PlannerRequest(
-        instruction="open profile",
-        ui_elements=[UIElement(id="1", class_name="Button", bounds=[400, 200, 500, 300], text="Profile")]
-    )
-    response = planner.generate_action(request)
-    assert response.action == ActionType.CLICK
-    assert response.target_coordinates == [450, 250]
-    assert response.done is False
+    def generate(self, system_prompt: str, prompt: str) -> str:
+        return self.response_value
 
+def test_planner_robustness():
+    """
+    Tests that the Planner predicts actions cleanly, stripping markdown wrappers,
+    and falls back to DONE actions correctly.
+    """
+    print("\n=== Planner Prompt and JSON Parser Test ===")
 
-def test_planner_generates_type_for_search():
-    planner = Planner()
-    request = PlannerRequest(
-        instruction="search for cat videos",
-        ui_elements=[
-            UIElement(id="1", class_name="EditText", bounds=[50, 100, 350, 150], text="Search...")
-        ]
-    )
-    response = planner.generate_action(request)
-    assert response.action == ActionType.TYPE
-    assert response.text_value != ""
-    assert response.done is False
+    # Case 1: Standard clean JSON action
+    vlm_clean = MockVLMBackend('{"action": "CLICK", "target_coordinates": [100, 200], "text_value": ""}')
+    planner_clean = Planner(vlm_clean)
+    res = planner_clean.predict("Click Sidebar", {"screen": "home"})
+    assert res["action"] == "CLICK", "Failed to extract clean action."
+    assert res["target_coordinates"] == [100, 200]
+    print("1. Standard JSON format parse. Passed.")
 
+    # Case 2: Markdown block wrapped JSON (Common in LLM outputs)
+    vlm_md = MockVLMBackend('```json\n{"action": "TYPE", "target_coordinates": [50, 50], "text_value": "search"}\n```')
+    planner_md = Planner(vlm_md)
+    res = planner_md.predict("Type text", {"screen": "home"})
+    assert res["action"] == "TYPE", "Failed to extract markdown wrapped action."
+    assert res["text_value"] == "search"
+    print("2. Markdown-wrapped JSON block parse. Passed.")
 
-def test_planner_generates_type_input():
-    planner = Planner()
-    request = PlannerRequest(
-        instruction="type hello world",
-        ui_elements=[
-            UIElement(id="1", class_name="EditText", bounds=[50, 100, 350, 150], text="Input")
-        ]
-    )
-    response = planner.generate_action(request)
-    assert response.action == ActionType.TYPE
-    assert "hello" in response.text_value.lower() or "world" in response.text_value.lower()
-    assert response.done is False
+    # Case 3: Raw DONE string fallback
+    vlm_done_raw = MockVLMBackend('DONE')
+    planner_done_raw = Planner(vlm_done_raw)
+    res = planner_done_raw.predict("Finish", {"screen": "home"})
+    assert res["action"] == "DONE", "Failed to resolve raw DONE string."
+    print("3. Raw DONE string parser fallback. Passed.")
 
+    # Case 4: JSON DONE object
+    vlm_done_json = MockVLMBackend('{"action": "DONE"}')
+    planner_done_json = Planner(vlm_done_json)
+    res = planner_done_json.predict("Finish", {"screen": "home"})
+    assert res["action"] == "DONE", "Failed to resolve JSON DONE object."
+    print("4. JSON DONE object parser fallback. Passed.")
 
-def test_planner_generates_done_for_finish():
-    planner = Planner()
-    request = PlannerRequest(
-        instruction="finish the task",
-        ui_elements=[]
-    )
-    response = planner.generate_action(request)
-    assert response.action == ActionType.DONE
-    assert response.done is True
+    print("Success: All Planner JSON and Prompt tests passed.")
+    print("==========================================\n")
 
-
-def test_planner_generates_done_for_complete():
-    planner = Planner()
-    request = PlannerRequest(
-        instruction="complete",
-        ui_elements=[UIElement(id="1", class_name="Button", bounds=[0, 0, 10, 10], text="Done")]
-    )
-    response = planner.generate_action(request)
-    assert response.action == ActionType.DONE
-    assert response.done is True
-
-
-def test_planner_generates_swipe():
-    planner = Planner()
-    request = PlannerRequest(
-        instruction="swipe up",
-        ui_elements=[UIElement(id="1", class_name="ListView", bounds=[0, 0, 400, 800], text="")]
-    )
-    response = planner.generate_action(request)
-    assert response.action == ActionType.SWIPE
-    assert response.target_coordinates is not None
-    assert len(response.target_coordinates) == 4
-
-
-def test_planner_generates_wait():
-    planner = Planner()
-    request = PlannerRequest(
-        instruction="please wait",
-        ui_elements=[UIElement(id="1", class_name="ProgressBar", bounds=[0, 0, 10, 10], text="Loading...")]
-    )
-    response = planner.generate_action(request)
-    assert response.action == ActionType.WAIT
-    assert response.done is False
-
-
-def test_planner_fallback_on_unknown():
-    planner = Planner()
-    request = PlannerRequest(
-        instruction="xyznonsense12345",
-        ui_elements=[]
-    )
-    response = planner.generate_action(request)
-    assert response.action in [ActionType.WAIT, ActionType.DONE]
-    assert isinstance(response.done, bool)
-
-
-def test_planner_response_is_valid():
-    planner = Planner()
-    request = PlannerRequest(
-        instruction="click settings",
-        ui_elements=[UIElement(id="1", class_name="Button", bounds=[0, 0, 10, 10], text="Settings")]
-    )
-    response = planner.generate_action(request)
-    assert isinstance(response.action, ActionType)
-    assert isinstance(response.done, bool)
-    assert isinstance(response.confidence, float)
-    assert 0.0 <= response.confidence <= 1.0
-    assert isinstance(response.reason, str)
-    assert isinstance(response.text_value, str)
-
-
-def test_planner_no_ui_elements():
-    planner = Planner()
-    request = PlannerRequest(
-        instruction="click something",
-        ui_elements=[]
-    )
-    response = planner.generate_action(request)
-    assert response.action in [ActionType.CLICK, ActionType.WAIT, ActionType.DONE]
-    assert isinstance(response.done, bool)
-
-
-def test_planner_with_multiple_elements():
-    planner = Planner()
-    request = PlannerRequest(
-        instruction="open profile",
-        ui_elements=[
-            UIElement(id="1", class_name="Button", bounds=[100, 200, 300, 400], text="Settings"),
-            UIElement(id="2", class_name="Button", bounds=[400, 200, 500, 300], text="Profile"),
-            UIElement(id="3", class_name="TextView", bounds=[100, 500, 300, 600], text="Welcome"),
-        ]
-    )
-    response = planner.generate_action(request)
-    assert response.action == ActionType.CLICK
-    assert response.target_coordinates == [450, 250]
+if __name__ == "__main__":
+    test_planner_robustness()
