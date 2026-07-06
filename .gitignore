@@ -18,7 +18,6 @@ instruction.txt
 sample_ui.json
 output.json
 .env
-.env.*
 
 # IDE config files
 .idea/
