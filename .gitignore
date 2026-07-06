@@ -16,8 +16,9 @@ screenshots/
 outputs/
 instruction.txt
 sample_ui.json
-output.json
-.env
+.env*
+*.key
+*.pem
 
 # IDE config files
 .idea/
