@@ -23,6 +23,7 @@ class VirtualKeyboard(QWidget):
         self.input_field.setPlaceholderText("Type location or search settings...")
         self.input_field.setReadOnly(True)  # Read-only so it's controlled strictly via keyboard keys
         self.input_field.setFixedHeight(50)
+        self.input_field.returnPressed.connect(self._on_enter_clicked)
         layout.addWidget(self.input_field)
 
         # Key rows layout

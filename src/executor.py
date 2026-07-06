@@ -1,5 +1,6 @@
 import json
-from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QAbstractButton, QLineEdit, QScrollArea
+import re
+from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QAbstractButton, QLineEdit, QScrollArea, QSlider
 from PySide6.QtCore import QPoint, Qt
 from PySide6.QtTest import QTest
 
@@ -32,6 +33,35 @@ def execute(action: dict) -> bool:
     action_name = action.get("action", "").upper()
     target_coords = action.get("target_coordinates", [0, 0])
     text_value = action.get("text_value", "")
+
+    if target_coords != [0, 0]:
+        x, y = target_coords[0], target_coords[1]
+        slider_widget = None
+        for w in main_window.findChildren(QSlider):
+            if w.isVisible() and w.isVisibleTo(main_window):
+                pos = w.mapTo(main_window, QPoint(0, 0))
+                wx, wy, ww, wh = pos.x(), pos.y(), w.width(), w.height()
+                if wx <= x <= wx + ww and wy <= y <= wy + wh:
+                    slider_widget = w
+                    break
+        
+        if slider_widget:
+            nums = re.findall(r'\d+', text_value)
+            if nums:
+                val = int(nums[0])
+            else:
+                if action_name == "SWIPE" and "DOWN" in text_value.upper():
+                    val = slider_widget.minimum()
+                else:
+                    relative_x = x - slider_widget.mapTo(main_window, QPoint(0, 0)).x()
+                    percentage = max(0.0, min(1.0, relative_x / slider_widget.width()))
+                    val = slider_widget.minimum() + int(percentage * (slider_widget.maximum() - slider_widget.minimum()))
+            
+            val = max(slider_widget.minimum(), min(slider_widget.maximum(), val))
+            print(f"[EXECUTOR] Intercepted {action_name} on QSlider {slider_widget.objectName()}. Setting value to {val}")
+            slider_widget.setValue(val)
+            app.processEvents()
+            return True
 
     if action_name == "CLICK":
         x, y = target_coords[0], target_coords[1]

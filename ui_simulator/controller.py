@@ -58,8 +58,15 @@ class UIController(QObject):
             if not name:
                 continue
 
+            # Skip keyboard individual keys to save VLM tokens
+            if name.startswith("key_"):
+                continue
+
             # Determine if widget is visible within current window hierarchy
             is_visible = widget.isVisible() and widget.isVisibleTo(self.main_window)
+            if not is_visible:
+                continue
+
 
             # Map coordinates to the MainWindow top-left corner
             if is_visible:
