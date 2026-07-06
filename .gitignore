@@ -12,8 +12,7 @@ __pycache__/
 models/
 
 # Transient dumps & user configuration
-screenshots/
-outputs/
+screenshots/current.png
 instruction.txt
 sample_ui.json
 .env*

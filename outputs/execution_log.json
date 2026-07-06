@@ -1,0 +1,92 @@
+[
+  {
+    "step": 1,
+    "timestamp": "2026-07-06T15:32:12.890618",
+    "instruction": "Open Navigation and type HO CHI MINH CITY in the textbox. Go to Vehicle and Swipe Limit to 100%. Done",
+    "screen": "home",
+    "action": {
+      "action": "CLICK",
+      "target_coordinates": [
+        110,
+        190
+      ],
+      "text_value": ""
+    },
+    "execution_result": "success",
+    "elapsed_time": 0.4445669651031494,
+    "error_message": "",
+    "screenshot": "screenshots/step_1.png"
+  },
+  {
+    "step": 2,
+    "timestamp": "2026-07-06T15:32:14.693965",
+    "instruction": "Open Navigation and type HO CHI MINH CITY in the textbox. Go to Vehicle and Swipe Limit to 100%. Done",
+    "screen": "navigation",
+    "action": {
+      "action": "CLICK",
+      "target_coordinates": [
+        622,
+        152
+      ],
+      "text_value": ""
+    },
+    "execution_result": "success",
+    "elapsed_time": 0.3029055595397949,
+    "error_message": "",
+    "screenshot": "screenshots/step_2.png"
+  },
+  {
+    "step": 3,
+    "timestamp": "2026-07-06T15:32:17.731863",
+    "instruction": "Open Navigation and type HO CHI MINH CITY in the textbox. Go to Vehicle and Swipe Limit to 100%. Done",
+    "screen": "keyboard",
+    "action": {
+      "action": "TYPE",
+      "target_coordinates": [
+        0,
+        0
+      ],
+      "text_value": "HO CHI MINH CITY"
+    },
+    "execution_result": "success",
+    "elapsed_time": 1.5373303890228271,
+    "error_message": "",
+    "screenshot": "screenshots/step_3.png"
+  },
+  {
+    "step": 4,
+    "timestamp": "2026-07-06T15:32:19.511138",
+    "instruction": "Open Navigation and type HO CHI MINH CITY in the textbox. Go to Vehicle and Swipe Limit to 100%. Done",
+    "screen": "navigation",
+    "action": {
+      "action": "CLICK",
+      "target_coordinates": [
+        110,
+        250
+      ],
+      "text_value": ""
+    },
+    "execution_result": "success",
+    "elapsed_time": 0.27863168716430664,
+    "error_message": "",
+    "screenshot": "screenshots/step_4.png"
+  },
+  {
+    "step": 5,
+    "timestamp": "2026-07-06T15:32:21.217191",
+    "instruction": "Open Navigation and type HO CHI MINH CITY in the textbox. Go to Vehicle and Swipe Limit to 100%. Done",
+    "screen": "vehicle",
+    "action": {
+      "action": "DONE",
+      "target_coordinates": [
+        0,
+        0
+      ],
+      "text_value": ""
+    },
+    "execution_result": "success_done",
+    "elapsed_time": 0.20558500289916992,
+    "error_message": "",
+    "screenshot": "screenshots/step_5.png"
+  }
+]
