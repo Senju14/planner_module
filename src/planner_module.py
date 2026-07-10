@@ -1,7 +1,6 @@
 import json
 import time
 import logging
-import os
 import shutil
 import threading
 from pathlib import Path
@@ -11,6 +10,7 @@ from src.prompt import SYSTEM_PROMPT, ACTION_SCHEMA
 from ui_simulator.controller import capture_current_screen
 import jsonschema
 from PySide6.QtCore import QEventLoop, QMetaObject, Qt
+from PySide6.QtWidgets import QApplication
 from src.config import STEP_DELAY
 
 logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
@@ -130,6 +130,14 @@ class Planner:
         if parsed.get("action", "").upper() == "DONE":
             parsed["target_coordinates"] = parsed.get("target_coordinates", [0, 0])
             parsed["text_value"] = parsed.get("text_value", "")
+            
+        # Handle case where VLM returns full bounds [x, y, width, height] instead of [x, y]
+        coords = parsed.get("target_coordinates")
+        if isinstance(coords, list) and len(coords) == 4:
+            parsed["target_coordinates"] = [
+                int(coords[0] + coords[2] / 2),
+                int(coords[1] + coords[3] / 2)
+            ]
             
         jsonschema.validate(instance=parsed, schema=ACTION_SCHEMA)
         
@@ -279,7 +287,6 @@ class PlannerLoop:
                     exec_result = self._safe_execute(action)
                     
                     # Let PySide6 process GUI update events and capture resulting screenshot
-                    from PySide6.QtWidgets import QApplication
                     app = QApplication.instance()
                     if app:
                         app.processEvents()

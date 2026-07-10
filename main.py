@@ -13,17 +13,17 @@ for directory in (project_root, ui_sim_dir):
         sys.path.insert(0, str(directory))
 
 from main_window import MainWindow
-from src.config import MAX_STEPS, GROQ_API_KEY
+from src.config import OPENROUTER_API_KEY
 from src.planner_module import Planner, PlannerLoop
 from src.executor import execute
-from src.vlm_backend import GroqVLM
+from src.vlm_backend import OpenRouterVLM
 
 def create_vlm_backend():
-    api_key = os.environ.get("GROQ_API_KEY", GROQ_API_KEY)
+    api_key = os.environ.get("OPENROUTER_API_KEY", OPENROUTER_API_KEY)
     if not api_key:
-        raise ValueError("GROQ_API_KEY is not set. Please set it in your environment or .env file.")
-    print("[AGENT] Using Groq API backend with qwen/qwen3.6-27b")
-    return GroqVLM(api_key=api_key)
+        raise ValueError("OPENROUTER_API_KEY is not set. Please set it in your environment or .env file.")
+    print("[AGENT] Using OpenRouter API")
+    return OpenRouterVLM(api_key=api_key)
 
 def main():
     parser = argparse.ArgumentParser(description="Automotive HMI GUI Agent")
@@ -42,9 +42,12 @@ def main():
     if args.instruction:
         instruction = args.instruction
     
+    vlm_backend = create_vlm_backend()
+    max_steps = vlm_backend.estimate_max_steps(instruction)
+    
     print(f"[AGENT] Launching Automotive HMI GUI Agent...")
     print(f"[AGENT] Target Goal: '{instruction}'")
-    print(f"[AGENT] Max Loop Steps: {MAX_STEPS}")
+    print(f"[AGENT] Dynamically Estimated Max Loop Steps: {max_steps}")
     
     app = QApplication(sys.argv)
     
@@ -57,17 +60,15 @@ def main():
     window.show()
     app.processEvents()
     
-    vlm_backend = create_vlm_backend()
     planner = Planner(vlm_backend)
     loop = PlannerLoop(
         planner,
         execute,
         window.controller,
-        MAX_STEPS
+        max_steps
     )
     
     QTimer.singleShot(1000, lambda: [loop.run(instruction), app.quit()])
-    
     sys.exit(app.exec())
 
 if __name__ == "__main__":

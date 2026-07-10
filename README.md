@@ -1,80 +1,72 @@
-# Automotive HMI GUI Agent (Vision-Based UI Navigation)
+# Automotive HMI GUI Agent (Trợ lý AI điều khiển giao diện xe hơi)
 
-Dự án phát triển một AI Agent điều khiển và tương tác với giao diện hệ thống thông tin giải trí trên ô tô (HMI) dựa trên dữ liệu hình ảnh (Vision) và danh sách cấu trúc widget hiện tại. Agent sẽ tự động lập kế hoạch và thực thi chuỗi hành động để hoàn thành mục tiêu của người dùng.
+Dự án phát triển một AI Agent tự động điều khiển và tương tác với giao diện hệ thống thông tin giải trí trên ô tô (HMI) thông qua xử lý hình ảnh (Vision) và dữ liệu trạng thái UI. Sử dụng sức mạnh của các mô hình AI lớn (như `openai/gpt-4o-mini` qua OpenRouter), Agent có thể tự động lập kế hoạch và thực thi các thao tác để hoàn thành mục tiêu của người dùng.
 
 ---
 
 ## 🚀 Các Tính Năng Nổi Bật
 
-1. **Phân tích hình ảnh tối ưu (Groq TPM Optimization)**:
-   - Tự động nén ảnh chụp màn hình về kích thước `512x288 JPEG (70%)` kết hợp cấu hình hiển thị chất lượng thấp (`low-detail`).
-   - Lọc bỏ các widget ẩn và nút bấm bàn phím ảo giúp giảm kích thước gói dữ liệu gửi đi tới **95%** (dưới 1000 tokens/request), hoàn toàn tránh lỗi giới hạn dung lượng `413 Payload Too Large` của Groq API.
-2. **Chống treo ứng dụng (Non-Blocking GUI Event Loop)**:
-   - Gửi yêu cầu API và xử lý mạng trên một luồng phụ ngầm (Background Thread) song song với việc duy trì vòng lặp sự kiện `QEventLoop` ở luồng chính. 
-   - Đảm bảo cửa sổ giả lập PySide6 luôn hoạt động mượt mà, phản hồi tốt và **không bị đóng băng (Not Responding)** khi gặp tình trạng chờ API rate limit.
-3. **Cơ chế Fallback thông minh chống lỗi API**:
-   - Nếu API Groq bị lỗi mạng, dính giới hạn cuộc gọi (`429 Rate Limit`) hoặc hết dung lượng, hệ thống sẽ tự động chuyển sang chế độ phản hồi giả lập dựa trên luật để chạy mượt mà chuỗi hành động mong muốn, phục vụ tốt cho việc quay video demo MVP.
-4. **Tương tác Widget nâng cao**:
-   - Nhận diện và tự động thay đổi giá trị thanh trượt `QSlider` (như giới hạn sạc pin xe lên 100%) bằng cách click tọa độ hoặc nhận diện tỷ lệ phần trăm.
-   - Nhập liệu và gửi yêu cầu tìm kiếm chuẩn xác thông qua bàn phím ảo tích hợp.
+1. **Tích hợp Mô hình Ngôn ngữ - Hình ảnh (VLM)**:
+   - Tận dụng API OpenRouter để sử dụng các mô hình AI có khả năng đọc hiểu không gian hình ảnh UI.
+   - Tự động chụp và nén màn hình theo thời gian thực để cung cấp bối cảnh cho AI một cách tiết kiệm token nhất.
+2. **Thu thập Trạng thái UI Động**:
+   - Tự động quét cấu trúc widget của PySide6 để ánh xạ các nút bấm, ô nhập liệu và thanh trượt mà không cần code cứng tọa độ (hardcode).
+3. **Thực thi Hành động Chuẩn xác**:
+   - Chuyển đổi trơn tru các lệnh từ AI (`CLICK`, `TYPE`, `SWIPE`) thành các thao tác chuột, bàn phím và kéo thả thực tế trên giao diện PySide6.
+4. **Kiến trúc Non-Blocking (Không gây đơ UI)**:
+   - Toàn bộ vòng lặp phân tích và gọi API của AI được chạy ngầm trên một luồng riêng (Background Thread), đảm bảo giao diện HMI luôn mượt mà và không bị treo.
 
 ---
 
-## 📁 Cấu Trúc Thư Mục Chính
+## 📁 Cấu Trúc Thư Mục
 
-- `main.py`: Điểm kích hoạt chương trình chính.
-- `instruction.txt`: Lưu câu lệnh yêu cầu của Agent (Ví dụ: Tìm kiếm đường đi, chỉnh cài đặt xe,...).
+- `main.py`: File khởi chạy cả giao diện UI và bộ não AI Agent.
+- `instruction.txt`: Nơi chứa câu lệnh yêu cầu của người dùng.
 - `src/`:
-  - `planner_module.py`: Vòng lặp Agent 5 giai đoạn (STAGE 1-5), lưu lịch sử hành động và tạo báo cáo.
-  - `vlm_backend.py`: Quản lý gọi API Groq (mô hình Qwen) và cơ chế tự động fallback.
-  - `executor.py`: Chuyển đổi lệnh hành động (CLICK, TYPE, SWIPE) và tác động trực tiếp vào widget của ứng dụng PySide6.
-  - `prompt.py`: Cấu hình Prompt hệ thống và Schema định dạng hành động JSON.
-  - `config.py`: File cấu hình chung (thời gian nghỉ giữa các bước, token, model...).
-- `ui_simulator/`: Chứa mã nguồn của bộ giả lập màn hình ô tô viết bằng PySide6.
-- `screenshots/`: Lưu ảnh chụp màn hình ứng dụng sau mỗi bước.
-- `outputs/`: Chứa nhật ký chi tiết hành động (`execution_log.json`) và báo cáo tổng quan (`summary_report.md`).
+  - `planner_module.py`: Vòng lặp lõi của Agent (Quét màn hình -> Lập kế hoạch -> Chạy).
+  - `vlm_backend.py`: Client kết nối API OpenRouter hỗ trợ hình ảnh và tự động ước tính số bước.
+  - `executor.py`: Dịch các lệnh trừu tượng thành thao tác trên PySide6.
+  - `prompt.py`: Prompt hệ thống cho AI và định dạng JSON.
+  - `config.py`: File cấu hình môi trường.
+- `ui_simulator/`: Mã nguồn giao diện mô phỏng HMI bằng PySide6.
+- `screenshots/`: Nơi lưu ảnh chụp màn hình trong quá trình chạy.
+- `outputs/`: Chứa file log và báo cáo kết quả markdown sau khi Agent chạy xong.
 
 ---
 
 ## 🛠️ Hướng Dẫn Cài Đặt
 
-1. **Tạo môi trường ảo Python**:
+1. **Tạo và kích hoạt môi trường ảo (virtual environment)**:
    ```bash
    python -m venv venv
+   .\venv\Scripts\activate   # Trên Windows
+   # source venv/bin/activate # Trên Linux/Mac
    ```
-2. **Kích hoạt môi trường ảo**:
-   - Trên Windows (PowerShell):
-     ```powershell
-     .\venv\Scripts\activate
-     ```
-   - Trên Linux/macOS:
-     ```bash
-     source venv/bin/activate
-     ```
-3. **Cài đặt thư viện**:
+2. **Cài đặt thư viện**:
    ```bash
    pip install -r requirements.txt
    ```
-4. **Thiết lập API Key**:
-   Tạo file `.env` tại thư mục gốc của dự án và thêm key Groq của bạn:
+3. **Cài đặt Biến môi trường**:
+   Copy file `.env.example` thành `.env` và điền OpenRouter API Key của bạn vào:
    ```env
-   GROQ_API_KEY=gsk_your_key_here
+   OPENROUTER_API_KEY=sk-or-your_api_key_here
+   OPENROUTER_MODEL=openai/gpt-4o-mini
    ```
 
 ---
 
-## 🎮 Cách Sử Dụng và Demo
+## 🎮 Cách Sử Dụng
 
-1. **Cấu hình yêu cầu**:
-   Mở file `instruction.txt` ở thư mục gốc và nhập yêu cầu của bạn, ví dụ:
+1. **Nhập câu lệnh yêu cầu**:
+   Sửa nội dung file `instruction.txt` theo ý bạn, ví dụ:
    ```text
-   Open Navigation and type HO CHI MINH CITY in the textbox. Go to Vehicle and Swipe Limit to 100%. Done
+   Open Navigation and type HO CHI MINH CITY in the textbox. Go to Vehicle and Swipe Limit to 100%. Done.
    ```
-2. **Khởi chạy Agent**:
+2. **Khởi chạy chương trình**:
    ```bash
    python main.py
    ```
 3. **Theo dõi kết quả**:
-   - Khi khởi chạy, màn hình giao diện giả lập ô tô PySide6 (kích thước chuẩn `1024x576`) sẽ hiện ra.
-   - Agent sẽ nghỉ 1.5 giây giữa mỗi hành động để tạo hiệu ứng chuyển màn hình tự nhiên hỗ trợ ghi hình video.
-   - Khi hoàn thành, ứng dụng tự động đóng lại và xuất báo cáo kết quả hoàn thành 100% trong thư mục `outputs/`.
+   - Giao diện mô phỏng HMI sẽ hiện lên.
+   - Agent sẽ tự động chuyển hướng màn hình, click và gõ phím.
+   - Khi chạy xong, kết quả tổng quát sẽ được xuất ra thư mục `outputs/`.

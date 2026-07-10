@@ -99,14 +99,15 @@ class UIController(QObject):
             else:
                 widget_type = "widget"
 
-            state["widgets"].append({
+            widget_state = {
                 "id": name,
                 "text": text,
                 "type": widget_type,
-                "enabled": widget.isEnabled(),
-                "visible": is_visible,
                 "geometry": [x, y, w, h]
-            })
+            }
+            if not widget.isEnabled():
+                widget_state["enabled"] = False
+            state["widgets"].append(widget_state)
 
         return state
 

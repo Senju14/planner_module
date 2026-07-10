@@ -70,7 +70,7 @@ def execute(action: dict) -> bool:
         # Filter visible widgets containing the coordinates
         matching_widgets = []
         for w_info in state["widgets"]:
-            if not w_info["visible"]:
+            if not w_info.get("visible", True):
                 continue
             wx, wy, ww, wh = w_info["geometry"]
             if wx <= x <= wx + ww and wy <= y <= wy + wh:
